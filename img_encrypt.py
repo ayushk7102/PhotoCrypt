@@ -93,6 +93,7 @@ class photo_encoder:
 			flat = (img_stacked.flatten())
 			bitstream = self.crypt_dict['bitstream']
 			idx = 0
+
 			#encoding the message in flattened pixel array
 			for i in range(i_off, i_off+crypt_dict['num_pairs']):
 				# print()
@@ -121,33 +122,34 @@ class photo_encoder:
 			size_bin = conv_bin(crypt_dict['num_pairs'], n_bits)
 			print(('offset: '+ offset_bin, 'size :'+ size_bin))
 			
-
+			print('i_offset = ', i_off)
+			print('num_pairs = ',crypt_dict['num_pairs'])
 			#encoding the offset index in the last n pixels, in reverse
 
 			i = flat.shape[0]-1
 			idx = 0
-
+			# print('i at start of encoding offset: ', i)
 			for count in range(n_bits//2):
-				print('i: ', i)
 				pix = flat[i]
 				bin_pix = conv_bin(pix, 8)
 				bin_pix_short = bin_pix[:len(bin_pix) - 2]
-				
-				print('previously flat[{0}]={1}'.format(i, flat[i]))
 				flat[i] = conv_dec(bin_pix_short + offset_bin[idx:idx+2])
-				print('now flat[{0}]={1}'.format(i, flat[i]))
+				
+				# print('previously flat[{0}]={1} ({2})'.format(i, flat[i], bin_pix))
+				# print('now flat[{0}]={1} ({2})'.format(i, flat[i], bin_pix_short + offset_bin[idx:idx+2]))
+				# print(i, ': ', offset_bin[idx:idx+2] )
 
 				idx+=2
 				i-=1
 
 
 			idx = 0
-			i = flat.shape[0]- n_bits - 2
+			# i = flat.shape[0]- n_bits - 2
 			
 
 			#encoding the number of pairs in the previous n pixels, in reverse
-
 			for count in range(n_bits//2):
+
 				pix = flat[i]
 				bin_pix = conv_bin(pix, 8)
 				bin_pix_short = bin_pix[:len(bin_pix) - 2]
@@ -155,13 +157,10 @@ class photo_encoder:
 				# print('previously flat[{0}]={1}'.format(i, flat[i]))
 				flat[i] = conv_dec(bin_pix_short + size_bin[idx:idx+2])
 				# print('now flat[{0}]={1}'.format(i, flat[i]))
+				# print(i, ': ', size_bin[idx:idx+2] )
 
 				idx+=2
 				i-=1
-
-			print('this is flat')
-			print(list(flat))
-			exit()
 
 			
 			reshaped = np.zeros_like(self.img)
@@ -179,8 +178,18 @@ class photo_encoder:
 				self.metric_vis()
 
 			if self.save_img:
-				cv.imwrite('lena_encrypted.jpeg', self.img_crypt)
+				# print(self.img_crypt)
+				# cv.imwrite('/home/ayush/Desktop/Stuff/Random/PhotoCrypt/PhotoCrypt/lena_encrypted.jpeg', self.img_crypt, [int(cv.IMWRITE_JPEG_QUALITY), 100])
+				cv.imwrite('/home/ayush/Desktop/Stuff/Random/PhotoCrypt/PhotoCrypt/lena_encrypted.png', self.img_crypt)
 
+				# Testing lossless write
+				
+				read = (cv.imread('/home/ayush/Desktop/Stuff/Random/PhotoCrypt/PhotoCrypt/lena_encrypted.png'))
+
+
+				# print(read - self.img_crypt)
+				# unique, counts = np.unique((read - self.img_crypt), return_counts=True)
+				# print(dict(zip(unique, counts)))
 
 
 	def metric_vis(self): #visualise img difference, noisy LSB distribution
