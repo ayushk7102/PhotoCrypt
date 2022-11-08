@@ -2,6 +2,10 @@ import cv2 as cv
 import random
 import math
 import numpy as np
+
+import os
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
 from img_encrypt import conv_bin, conv_dec
 
 class photo_decoder:
@@ -66,8 +70,25 @@ class photo_decoder:
 			print('i_offset = ', self.i_offset)
 			print('num_pairs = ', self.num_pairs)
 
+	def decrypt_msg(self, ct):
+		encoding = 'utf-8'
+		with open('key.txt', 'rb') as f:
+			key = f.read()
 
-	def decode_msg(self):
+		with open('iv.txt', 'rb') as f:
+			iv = f.read()
+
+		cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+
+		decryptor = cipher.decryptor()
+
+		x = decryptor.update(ct) + decryptor.finalize()
+		print(x)
+		return x
+	
+
+	def decode_msg(self, encrypted=False):
+
 		i_off = self.i_offset
 		n_pairs = self.num_pairs
 
@@ -75,6 +96,7 @@ class photo_decoder:
 		curr_bits = ''
 		message = ''
 		count_bits = 0
+		byte_arr = []
 		for i in range(i_off, i_off+n_pairs):
 			pix = self.flat[i]
 			bin_pix = conv_bin(pix, 8)
@@ -83,14 +105,24 @@ class photo_decoder:
 			count_bits+=2
 
 			if(count_bits == 8):
-				message += chr(int(curr_bits, 2))
+				if not encrypted:
+					message += chr(int(curr_bits, 2))
+				else:
+					byte_arr.append(int(curr_bits, 2))
 				count_bits = 0
 				curr_bits= ''
-		print(bitstream)
-		print(message)
+		# print(bitstream)
+		# print(byte_arr)
+		# print(bytearray(byte_arr))
+		message = (self.decrypt_msg(bytearray(byte_arr)))
+		print('msg= ',message)
+
 
 if __name__ == '__main__':
+	encrypted = True
 	p = photo_decoder()
 	p.read_image()
 	p.decode_metadata()
-	p.decode_msg()
+	p.decode_msg(encrypted)
+
+
